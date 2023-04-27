@@ -1,0 +1,206 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// Declaration for SSD1306 display connected using software SPI:
+#define OLED_MOSI   9  //D1 
+#define OLED_CLK   10  //D0
+#define OLED_DC    11  //DC
+#define OLED_CS    12  //CS
+#define OLED_RESET 13  //RES
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+
+//turbidity sensor
+int sensorPin = A0;
+float volt;
+float ntu;
+//control switches
+#define forwardpin  A1
+#define backwardpin A2
+#define rightpin A3
+#define leftpin A4
+#define upwardpin  A5
+#define downwardpin  2
+//MOTOR DRIVER 
+#define M1A 3
+#define M1B 4
+#define M2A 5
+#define M2B 6
+#define M3A 7
+#define M3B 8
+//MOTOR CONTROLS
+void Forward(){
+  digitalWrite(M1A,HIGH);
+  digitalWrite(M1B,LOW);
+  digitalWrite(M2A,HIGH);
+  digitalWrite(M2B,LOW);
+  Serial.println("FWD");
+}
+void Backward(){
+  digitalWrite(M1A,LOW);
+  digitalWrite(M1B,HIGH);
+  digitalWrite(M2A,LOW);
+  digitalWrite(M2B,HIGH);
+  Serial.println("BKD");
+}
+void Left(){
+  digitalWrite(M1A,HIGH);
+  digitalWrite(M1B,LOW);
+  digitalWrite(M2A,LOW);
+  digitalWrite(M2B,HIGH);
+  Serial.println("lft");  
+}
+void Right(){
+  digitalWrite(M1A,LOW);
+  digitalWrite(M1B,HIGH);
+  digitalWrite(M2A,HIGH);
+  digitalWrite(M2B,LOW);
+  Serial.println("right");  
+}
+void Stop(){
+  digitalWrite(M1A,LOW);
+  digitalWrite(M1B,LOW);
+  digitalWrite(M2A,LOW);
+  digitalWrite(M2B,LOW);
+  digitalWrite(M3A,LOW);
+  digitalWrite(M3B,LOW);
+  Serial.println("Stop"); 
+}
+void UPward(){
+  digitalWrite(M3A,HIGH);
+  digitalWrite(M3B,LOW);
+  Serial.println("UP");}
+ void Downward(){
+  digitalWrite(M3A,LOW);
+  digitalWrite(M3B,HIGH);
+  Serial.println("DOWN");}
+
+
+void setup()
+{
+  Serial.begin(9600);
+  //  using SPI prot
+  if(!display.begin(SSD1306_SWITCHCAPVCC)) {
+    Serial.println(F("SSD1306 allocation failed"));
+   for(;;); // Don't proceed, loop forever
+  }
+   display.clearDisplay();
+   
+   
+ pinMode(forwardpin, INPUT_PULLUP);
+ pinMode(backwardpin, INPUT_PULLUP);
+ pinMode(leftpin, INPUT_PULLUP);
+ pinMode(rightpin, INPUT_PULLUP);
+ pinMode(upwardpin, INPUT_PULLUP);
+ pinMode(downwardpin, INPUT_PULLUP);
+}
+ float round_to_dp (float in_value, int decimal_place){
+  float multiplier = powf(10.0f, decimal_place);
+  in_value = roundf(in_value * multiplier)/ multiplier;
+  return in_value;}
+
+
+
+void loop()
+{
+   
+ volt = 0;
+  for( int i =0; i<800; i++){
+    volt += ((float)analogRead(sensorPin)/1023)*5*2.41;
+  }
+  volt = volt/800;
+  volt = round_to_dp(volt,2);
+  if (volt < 2.5){
+    ntu = 3000;
+  }else{
+    ntu = -1120.4*square(volt)+5742.3*volt-4353.8;
+  }
+  Serial.print( volt);
+  Serial.print(" V");
+  Serial.print(ntu);
+  Serial.print("NTU");
+   Serial.print("\n");
+  delay(10);
+int forward = digitalRead (forwardpin);
+int back = digitalRead (backwardpin);
+int right =digitalRead (rightpin);
+int left = digitalRead (leftpin);
+int up = digitalRead (upwardpin);
+int down = digitalRead(downwardpin);
+if (forward==0){
+   Forward();
+  display.setCursor(0,35);
+   display.setTextSize(2);
+  display.setTextColor(WHITE);
+   display.println("^^^^^");
+     display.setTextSize(1);
+   display.println("|||||||||");
+  display.display();
+  
+}else if (back == 0){
+  Backward();
+  display.setCursor(0,35);
+   display.setTextSize(1);
+  display.setTextColor(WHITE);
+   display.println("||||||||");
+     display.setTextSize(2);
+   display.println("VVVV");
+  display.display();
+}else if (right == 0){
+ Right();
+  display.setCursor(0,35);
+   display.setTextSize(2);
+  display.setTextColor(WHITE);
+   display.println("-->>>");
+  display.display();
+}else if (left ==0){
+  Left();
+  display.setCursor(0,35);
+   display.setTextSize(2);
+  display.setTextColor(WHITE);
+   display.println("<<<--");
+  display.display();
+}else if (up == 0){
+  UPward();
+   display.setCursor(0,35);
+   display.setTextSize(3);
+  display.setTextColor(WHITE);
+   display.println("^^^^");
+     display.setTextSize(1);
+   display.println("---------");
+  display.display();
+}else if (down == 0){
+  Downward();
+  display.setCursor(0,35);
+   display.setTextSize(1);
+  display.setTextColor(WHITE);
+   display.println("--------");
+   display.setTextSize(2);
+   display.println("VVVVV");
+  display.display();
+}else{
+  Stop();
+   display.setCursor(0,35);
+   display.setTextSize(2);
+  display.setTextColor(WHITE);
+   display.println(".........");}
+  
+
+
+
+  // Display Text
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.println("Turbidity");
+  display.println(ntu);
+  display.display();
+  //display.startscrollright(0x00, 0x09);
+  //delay(8000);
+  display.clearDisplay();
+  delay(300);
+  }
